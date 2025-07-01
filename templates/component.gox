@@ -1,6 +1,6 @@
 <!-- Component Template - Replace {{ComponentName}} with your component name -->
 <template>
-  <div class="{{component-name}}">
+  <div class="{{ComponentName}}">
     <!-- Add your HTML template here -->
     <h1>{{ComponentName}}</h1>
     <p>{{ .Message }}</p>
