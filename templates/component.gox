@@ -1,0 +1,41 @@
+<!-- Component Template - Replace {{ComponentName}} with your component name -->
+<template>
+  <div class="{{ComponentName}}">
+    <!-- Add your HTML template here -->
+    <h1>{{ComponentName}}</h1>
+    <p>{{ .Message }}</p>
+  </div>
+</template>
+
+<script>
+package main
+
+import (
+  "net/http"
+)
+
+// {{ComponentName}}Props defines the props for this component
+type {{ComponentName}}Props struct {
+  Message string `json:"message"`
+}
+
+// Handle{{ComponentName}}Action handles actions for this component
+func (p {{ComponentName}}Props) Handle{{ComponentName}}Action(w http.ResponseWriter, r *http.Request) {
+  // Add your component logic here
+  w.WriteHeader(http.StatusOK)
+}
+</script>
+
+<style>
+.{{component-name}} {
+  /* Add your component styles here */
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+}
+
+.{{component-name}} h1 {
+  color: #333;
+  margin: 0 0 0.5rem 0;
+}
+</style>
