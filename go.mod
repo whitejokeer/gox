@@ -1,6 +1,6 @@
 module github.com/whitejokeer/gox
 
-go 1.24.4
+go 1.23
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0
