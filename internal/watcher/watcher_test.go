@@ -3,6 +3,7 @@ package watcher
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -56,21 +57,28 @@ func TestWatcher_Integration(t *testing.T) {
 	require.NoError(t, err)
 	defer watcher.Close()
 
-	// Track events
+	// Track events with proper synchronization
+	var mu sync.Mutex
 	var events []string
 	var eventPaths []string
 
 	watcher.OnCreate(func(path string) {
+		mu.Lock()
+		defer mu.Unlock()
 		events = append(events, "create")
 		eventPaths = append(eventPaths, path)
 	})
 
 	watcher.OnChange(func(path string) {
+		mu.Lock()
+		defer mu.Unlock()
 		events = append(events, "change")
 		eventPaths = append(eventPaths, path)
 	})
 
 	watcher.OnDelete(func(path string) {
+		mu.Lock()
+		defer mu.Unlock()
 		events = append(events, "delete")
 		eventPaths = append(eventPaths, path)
 	})
@@ -113,7 +121,10 @@ func TestWatcher_Integration(t *testing.T) {
 	// Stop the watcher
 	watcher.Close()
 
-	// Verify events were captured
+	// Verify events were captured with proper synchronization
+	mu.Lock()
+	defer mu.Unlock()
+	
 	// Note: File system events can be flaky in tests, so we check for at least some events
 	assert.True(t, len(events) > 0, "Expected at least one event")
 
@@ -133,10 +144,13 @@ func TestWatcher_NonGoxFiles(t *testing.T) {
 	require.NoError(t, err)
 	defer watcher.Close()
 
-	// Track events
+	// Track events with proper synchronization
+	var mu sync.Mutex
 	var events []string
 
 	watcher.OnCreate(func(path string) {
+		mu.Lock()
+		defer mu.Unlock()
 		events = append(events, "create")
 	})
 
@@ -164,6 +178,8 @@ func TestWatcher_NonGoxFiles(t *testing.T) {
 	// Stop the watcher
 	watcher.Close()
 
-	// Verify no events were captured for non-.gox files
+	// Verify no events were captured for non-.gox files with proper synchronization
+	mu.Lock()
+	defer mu.Unlock()
 	assert.Equal(t, 0, len(events), "Expected no events for non-.gox files")
 }
