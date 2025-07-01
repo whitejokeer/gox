@@ -47,7 +47,7 @@ type MyComponent struct {
 	}
 
 	// Output:
-	// Tokenized 8 tokens
+	// Tokenized 9 tokens
 	// TEMPLATE_START at line 1
 	// TEMPLATE_END at line 5
 	// GO_START at line 7
