@@ -8,6 +8,13 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// Event constants for watcher callbacks
+const (
+	EventChange = "change"
+	EventCreate = "create"
+	EventDelete = "delete"
+)
+
 // Watcher handles file system watching for .gox files
 type Watcher struct {
 	watcher   *fsnotify.Watcher
@@ -34,17 +41,17 @@ func (w *Watcher) AddPath(path string) error {
 
 // OnChange sets a callback for when .gox files change
 func (w *Watcher) OnChange(callback func(string)) {
-	w.callbacks["change"] = callback
+	w.callbacks[EventChange] = callback
 }
 
 // OnCreate sets a callback for when .gox files are created
 func (w *Watcher) OnCreate(callback func(string)) {
-	w.callbacks["create"] = callback
+	w.callbacks[EventCreate] = callback
 }
 
 // OnDelete sets a callback for when .gox files are deleted
 func (w *Watcher) OnDelete(callback func(string)) {
-	w.callbacks["delete"] = callback
+	w.callbacks[EventDelete] = callback
 }
 
 // Start starts the file watcher
@@ -63,15 +70,15 @@ func (w *Watcher) Start() error {
 
 			switch {
 			case event.Has(fsnotify.Write):
-				if callback, exists := w.callbacks["change"]; exists {
+				if callback, exists := w.callbacks[EventChange]; exists {
 					callback(event.Name)
 				}
 			case event.Has(fsnotify.Create):
-				if callback, exists := w.callbacks["create"]; exists {
+				if callback, exists := w.callbacks[EventCreate]; exists {
 					callback(event.Name)
 				}
 			case event.Has(fsnotify.Remove):
-				if callback, exists := w.callbacks["delete"]; exists {
+				if callback, exists := w.callbacks[EventDelete]; exists {
 					callback(event.Name)
 				}
 			}

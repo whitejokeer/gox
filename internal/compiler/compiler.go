@@ -4,6 +4,8 @@ package compiler
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/whitejokeer/gox/internal/parser"
@@ -23,6 +25,9 @@ func New(outputDir string) *Compiler {
 
 // Compile compiles a parsed .gox file into a Go component
 func (c *Compiler) Compile(goxFile *parser.GoxFile) (string, error) {
+	// Extract component name from file path
+	componentName := extractComponentName(goxFile.Path)
+
 	// TODO: Implement actual compilation logic
 	tmpl := `package components
 
@@ -52,7 +57,7 @@ func (c *{{ .ComponentName }}) Render(w http.ResponseWriter, r *http.Request) er
 	data := struct {
 		ComponentName string
 	}{
-		ComponentName: "ExampleComponent", // TODO: Extract from goxFile
+		ComponentName: componentName,
 	}
 
 	if err := t.Execute(&buf, data); err != nil {
@@ -60,6 +65,34 @@ func (c *{{ .ComponentName }}) Render(w http.ResponseWriter, r *http.Request) er
 	}
 
 	return buf.String(), nil
+}
+
+// extractComponentName extracts a PascalCase component name from file path
+func extractComponentName(filePath string) string {
+	// Get base filename without extension
+	filename := strings.TrimSuffix(filepath.Base(filePath), ".gox")
+
+	// Convert to PascalCase
+	parts := strings.FieldsFunc(filename, func(r rune) bool {
+		return r == '-' || r == '_' || r == ' '
+	})
+
+	var result strings.Builder
+	for _, part := range parts {
+		if len(part) > 0 {
+			result.WriteString(strings.ToUpper(string(part[0])))
+			if len(part) > 1 {
+				result.WriteString(strings.ToLower(part[1:]))
+			}
+		}
+	}
+
+	componentName := result.String()
+	if componentName == "" {
+		componentName = "Component"
+	}
+
+	return componentName
 }
 
 // CompileToFile compiles a .gox file and writes the result to a file
