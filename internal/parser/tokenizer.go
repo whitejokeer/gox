@@ -228,44 +228,51 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 		
 		// Find the next relevant tag or end of input
 		for pos < len(input) {
-			if input[pos] == '<' {
-				var shouldBreak bool
-				
-				if state == STATE_OUTSIDE {
-					// Look for any opening tag
-					if pos+1 < len(input) && input[pos+1] == '/' {
-						// Potential closing tag
-						_, _, err := t.parseClosingTag(input[pos:])
-						shouldBreak = (err == nil)
-					} else {
-						// Potential opening tag
-						_, _, err := t.parseOpeningTag(input[pos:])
-						shouldBreak = (err == nil)
-					}
+			nextTagPos := bytes.IndexByte(input[pos:], '<')
+			if nextTagPos == -1 {
+				// No more tags, process remaining text
+				pos = len(input)
+				break
+			}
+			pos += nextTagPos
+			
+			var shouldBreak bool
+			
+			if state == STATE_OUTSIDE {
+				// Look for any opening tag
+				if pos+1 < len(input) && input[pos+1] == '/' {
+					// Potential closing tag
+					_, _, err := t.parseClosingTag(input[pos:])
+					shouldBreak = (err == nil)
 				} else {
-					// We're inside a block, only look for the matching closing tag
-					if pos+1 < len(input) && input[pos+1] == '/' {
-						tagType, _, err := t.parseClosingTag(input[pos:])
-						if err == nil {
-							switch state {
-							case STATE_IN_TEMPLATE:
-								shouldBreak = (tagType == TOKEN_TEMPLATE_END)
-							case STATE_IN_SCRIPT:
-								shouldBreak = (tagType == TOKEN_GO_END)
-							case STATE_IN_STYLE:
-								shouldBreak = (tagType == TOKEN_STYLE_END)
-							}
+					// Potential opening tag
+					_, _, err := t.parseOpeningTag(input[pos:])
+					shouldBreak = (err == nil)
+				}
+			} else {
+				// We're inside a block, only look for the matching closing tag
+				if pos+1 < len(input) && input[pos+1] == '/' {
+					tagType, _, err := t.parseClosingTag(input[pos:])
+					if err == nil {
+						switch state {
+						case STATE_IN_TEMPLATE:
+							shouldBreak = (tagType == TOKEN_TEMPLATE_END)
+						case STATE_IN_SCRIPT:
+							shouldBreak = (tagType == TOKEN_GO_END)
+						case STATE_IN_STYLE:
+							shouldBreak = (tagType == TOKEN_STYLE_END)
 						}
 					}
 				}
-				
-				if shouldBreak {
-					break
-				}
 			}
 			
-			// Move to next character
-			pos, line, column = t.advanceOne(input, pos, line, column)
+			if shouldBreak {
+				break
+			}
+			
+			// Update line and column based on skipped text
+			skippedText := input[pos-nextTagPos : pos]
+			line, column = t.updateLineColumn(skippedText, line, column)
 		}
 		
 		// Create text token if we have content
