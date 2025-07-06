@@ -117,10 +117,10 @@ func NewTokenizer() Tokenizer {
 type BlockState int
 
 const (
-	STATE_OUTSIDE BlockState = iota
-	STATE_IN_TEMPLATE
-	STATE_IN_SCRIPT
-	STATE_IN_STYLE
+	stateOutside BlockState = iota
+	stateInTemplate
+	stateInScript
+	stateInStyle
 )
 
 // Tokenize tokenizes the input content into tokens
