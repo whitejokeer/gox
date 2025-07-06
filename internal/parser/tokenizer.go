@@ -133,7 +133,7 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 	pos := 0
 	line := 1
 	column := 1
-	state := STATE_OUTSIDE
+	state := stateOutside
 
 	for pos < len(input) {
 		// Check for tags starting with '<'
@@ -148,13 +148,13 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 				// Check if this closing tag matches our current state
 				var validClosingTag bool
 				switch state {
-				case STATE_IN_TEMPLATE:
+				case stateInTemplate:
 					validClosingTag = (tagType == TOKEN_TEMPLATE_END)
-				case STATE_IN_SCRIPT:
+				case stateInScript:
 					validClosingTag = (tagType == TOKEN_GO_END)
-				case STATE_IN_STYLE:
+				case stateInStyle:
 					validClosingTag = (tagType == TOKEN_STYLE_END)
-				case STATE_OUTSIDE:
+				case stateOutside:
 					// Outside any block, any closing tag is invalid in proper context
 					// but we'll still tokenize it
 					validClosingTag = true
@@ -171,7 +171,7 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 					tokens = append(tokens, token)
 					
 					// Update state back to outside
-					state = STATE_OUTSIDE
+					state = stateOutside
 					
 					// Update position and line/column tracking
 					newLine, newColumn := t.updatePosition(input[pos:pos+tagLength], line, column)
@@ -182,7 +182,7 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 				} else {
 					// Wrong closing tag for current state, continue to text parsing
 				}
-			} else if state == STATE_OUTSIDE {
+			} else if state == stateOutside {
 				// Only look for opening tags when we're outside any block
 				tagType, tagLength, err := t.parseOpeningTag(input[pos:])
 				if err != nil {
@@ -201,11 +201,11 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 					// Update state based on tag type
 					switch tagType {
 					case TOKEN_TEMPLATE_START:
-						state = STATE_IN_TEMPLATE
+						state = stateInTemplate
 					case TOKEN_GO_START:
-						state = STATE_IN_SCRIPT
+						state = stateInScript
 					case TOKEN_STYLE_START:
-						state = STATE_IN_STYLE
+						state = stateInStyle
 					}
 					
 					// Update position and line/column tracking
@@ -238,7 +238,7 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 			
 			var shouldBreak bool
 			
-			if state == STATE_OUTSIDE {
+			if state == stateOutside {
 				// Look for any opening tag
 				if pos+1 < len(input) && input[pos+1] == '/' {
 					// Potential closing tag
@@ -255,11 +255,11 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 					tagType, _, err := t.parseClosingTag(input[pos:])
 					if err == nil {
 						switch state {
-						case STATE_IN_TEMPLATE:
+						case stateInTemplate:
 							shouldBreak = (tagType == TOKEN_TEMPLATE_END)
-						case STATE_IN_SCRIPT:
+						case stateInScript:
 							shouldBreak = (tagType == TOKEN_GO_END)
-						case STATE_IN_STYLE:
+						case stateInStyle:
 							shouldBreak = (tagType == TOKEN_STYLE_END)
 						}
 					}
@@ -270,9 +270,9 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 				break
 			}
 			
-			// Update line and column based on skipped text
-			skippedText := input[pos-nextTagPos : pos]
-			line, column = t.updateLineColumn(skippedText, line, column)
+			// If we didn't break, advance past this '<' character and continue
+			pos++
+			line, column = t.updatePosition([]byte{'<'}, line, column)
 		}
 		
 		// Create text token if we have content
@@ -288,6 +288,8 @@ func (t *defaultTokenizer) Tokenize(input []byte) ([]Token, error) {
 				}
 				tokens = append(tokens, token)
 			}
+			// Update line and column based on the processed text
+			line, column = t.updatePosition(input[textStart:pos], textLine, textColumn)
 		}
 	}
 	
@@ -356,6 +358,23 @@ func (t *defaultTokenizer) parseClosingTag(input []byte) (tokenType TokenType, l
 	default:
 		return TOKEN_TEXT, 0, fmt.Errorf("unknown closing tag: %s", tagContent)
 	}
+}
+
+// updateLineColumn updates line and column based on content
+func (t *defaultTokenizer) updateLineColumn(content []byte, line, column int) (newLine, newColumn int) {
+	newLine = line
+	newColumn = column
+	
+	for _, b := range content {
+		if b == '\n' {
+			newLine++
+			newColumn = 1
+		} else {
+			newColumn++
+		}
+	}
+	
+	return newLine, newColumn
 }
 
 // updatePosition updates line and column based on content

@@ -39,6 +39,7 @@ dist/
 # Development tools
 build-errors.log
 .air.toml.tmp
+debug.go
 
 # OS files
 .DS_Store
